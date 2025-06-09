@@ -10,7 +10,7 @@
 ## Description
 **Author(s)**: [LaswitchTech](support@laswitchtech.com)
 
-LaswitchTech - Core Framework extension.
+LaswitchTech - Core Framework extension. This extension provides support for user management, allowing administrators to manage user accounts, roles, and permissions within the application.
 
 ## License
 This software is distributed under the [GPLv3](LICENSE) license.
