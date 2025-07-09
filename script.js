@@ -1,10 +1,3 @@
-//
-//   Core Framework - Script file
-//
-//   @license    MIT (https://mit-license.org/)
-//   @author     Louis Ouellet <louis@laswitchtech.com>
-//
-
 // Users
 const UserForm = function(form,values = {},modal = null){
 
@@ -46,20 +39,6 @@ const UserForm = function(form,values = {},modal = null){
             }
         }
     }
-
-    // csrf
-    form.add(
-        {
-            name: CSRF_KEY,
-            label: 'csrf',
-            icon: 'hash',
-            type: 'hidden',
-            value: CSRF_TOKEN,
-        },
-        function(input,form){
-            input.css('display','none');
-        },
-    );
 
     // name
     form.add(
