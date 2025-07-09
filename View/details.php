@@ -1,14 +1,8 @@
-<!--
-  Core Framework - View File
-
-  @license    MIT (https://mit-license.org/)
-  @author     Louis Ouellet <louis@laswitchtech.com>
--->
 <div class="col-12" id="layout"></div>
 <script>
     $(document).ready(function(){
         $.ajax({
-            url: '/endpoint.php/users/fetch?id=<?= $this->Request->getParams('GET', 'id') ?>',
+            url: '/api/users/fetch?id=<?= $this->Request->getParams('GET', 'id') ?>',
             type: 'GET',dataType: 'json',
             error: function(xhr, status, error) {
                 let color = 'info', icon = 'question-circle', title = builder.Locale.get(xhr.statusText), content = builder.Locale.get(xhr.responseText);
@@ -20,7 +14,11 @@
                 builder.Component("alert","#layout",{icon:icon,color:color,title:title},function(alert,component){component.content.html('<pre class="m-0 p-2">'+content+'</pre>');});
             },
             success: function(response) {
-                console.log(response);
+
+                // Configure Storage
+                builder.Storage.setKey('user:'+response.record.id);
+                builder.Storage.set(response);
+                console.log(builder.Storage.get())
 
                 // Set the color, icon and label
                 var color = ['secondary','primary','success','warning','danger'];
@@ -138,7 +136,7 @@
                                 label: builder.Locale.get("Notes"),
                             },
                             function(tab,nav){
-                                NotesFeed(response.record.notes ?? {}, tab, 'users', response.record.id);
+                                NotesFeed(builder.Storage.get('dependencies:notes') ?? {}, tab, 'users', builder.Storage.get('record:id'));
                             },
                         );
                         tabs.add(
@@ -148,16 +146,16 @@
                                 label: builder.Locale.get("Contacts"),
                             },
                             function(tab,nav){
-                                ContactsFeed(response.record.contacts ?? {}, tab, {
-                                    "address": response.record.vcard.address,
-                                    "city": response.record.vcard.city,
-                                    "country": response.record.vcard.country,
-                                    "state": response.record.vcard.state,
-                                    "zipcode": response.record.vcard.zipcode,
-                                    "locale": response.record.vcard.locale,
-                                    "phone": response.record.vcard.phone,
+                                ContactsFeed(builder.Storage.get('dependencies:contacts') ?? {}, tab, {
+                                    "address": builder.Storage.get('record:vcard:address'),
+                                    "city": builder.Storage.get('record:vcard:city'),
+                                    "country": builder.Storage.get('record:vcard:country:name'),
+                                    "state": builder.Storage.get('record:vcard:state:name'),
+                                    "zipcode": builder.Storage.get('record:vcard:zipcode'),
+                                    "locale": builder.Storage.get('record:vcard:locale'),
+                                    "phone": builder.Storage.get('record:vcard:phone'),
                                     "targetTable": "users",
-                                    "targetId": response.record.id,
+                                    "targetId": builder.Storage.get('record:id'),
                                 });
                             },
                         );
@@ -168,24 +166,24 @@
                                 label: builder.Locale.get("Files"),
                             },
                             function(tab,nav){
-                                FilesFeed(response.record.files ?? {}, tab, {
+                                FilesFeed(builder.Storage.get('dependencies:files') ?? {}, tab, {
                                     targetTable: "users",
-                                    targetId: response.record.id,
+                                    targetId: builder.Storage.get('record:id'),
                                     isPublic: 1,
                                 });
                             },
                         );
-                        // tabs.add(
-                        //     'activities',
-                        //     {
-                        //         icon: "activity",
-                        //         label: builder.Locale.get("Activity"),
-                        //     },
-                        //     function(tab,nav){
-                        //         tab.addClass('px-4 py-3');
-                        //         EventFeed(response.record.events ?? {}, tab);
-                        //     },
-                        // );
+                        tabs.add(
+                            'activities',
+                            {
+                                icon: "activity",
+                                label: builder.Locale.get("Activity"),
+                            },
+                            function(tab,nav){
+                                tab.addClass('px-4 py-3');
+                                EventFeed(builder.Storage.get('dependencies:event') ?? {}, tab);
+                            },
+                        );
                         tabs.add(
                             'related',
                             {
@@ -194,7 +192,9 @@
                             },
                             function(tab,nav){
                                 tab.addClass('px-4 py-3');
-                                RelationshipFeed(response.relationships ?? [], tab);
+                                RelationshipFeed(builder.Storage.getKey(), tab, function(feed){
+                                    // card.related.feed = feed;
+                                });
                             },
                         );
                     },

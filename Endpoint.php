@@ -1,201 +1,367 @@
 <?php
 
-/**
- * Core Framework - UsersEndpoint
- *
- * @license    MIT (https://mit-license.org/)
- * @author     Louis Ouellet <louis@laswitchtech.com>
- */
-
 // Import additionnal class into the global namespace
-use \LaswitchTech\Core\Objects;
-use \LaswitchTech\Core\Abstracts\Endpoint;
+use \LaswitchTech\Core\Base\BaseEndpoint;
 
-class UsersEndpoint extends Endpoint {
+class UsersEndpoint extends BaseEndpoint {
 
     /**
      * Constructor
      */
     public function __construct()
     {
-
-        // Call Parent Constructor
+        // Call the parent constructor
         parent::__construct();
 
-        // Retrieve the namespace
-        $namespace = $this->Request->getNamespace();
+        // Initialize the Endpoint
+        $this->init('users');
 
-        // Set Global access
-        $this->Public = false;
-
-        // Set Level
-        switch($namespace){
-            case "/users/index":
-            case "/users/fetch":
-                $this->Level = 1;
-                break;
-            case "/users/update":
-                $this->Level = 3;
-                break;
-            case "/users/create":
-                $this->Level = 2;
-                break;
-        }
+        // Set Properties
+        $this->required = ['username'];
+        $this->optional = ['name', 'locale','email','phone','tollfree','mobile','fax','tags','dba','industries','businessNumber','taxExtension','importerExtension','website','address','city','country','state','zipcode'];
     }
 
     /**
-     * Fetch all users
-     */
-    public function indexAction(): array
-    {
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => $this->Model->Users->list()];
-
-        // Return the message
-        return $message;
-    }
-
-    /**
-     * Fetch a User's Information
+     * Retrieve a record
      */
     public function fetchAction(): array
     {
-        // Import Global Variables
-        global $CONFIG;
+        // Call the parent constructor
+        $message = parent::fetchAction();
 
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => [
-            "record" => $this->Model->Users->get(intval($this->Request->getParams('GET', 'id')))
-        ]];
+        // Check if the records is accessible
+        if($message['status'] == 200){
+
+            // Check if the vCards Plugin is accessible
+            if($this->Helper->Core->isInstalled('vcards')){
+                $message['data']['record']['vcard'] = $this->Model->Vcards->fetch(intval($message['data']['record']['vcard']['id']));
+            }
+
+            // Check if the Relationship Plugin is accessible
+            if($this->Helper->Core->isInstalled('relationship')){
+                $message['data']['dependencies']['relationship'] = $this->Model->Relationship->get($this->basename, $message['data']['record']['id']);
+                if($this->Helper->Core->isInstalled('vcards') && array_key_exists('vcard', $message['data']['record'])){
+                    $message['data']['dependencies']['relationship'] = array_merge(
+                        $message['data']['dependencies']['relationship'],
+                        $this->Model->Relationship->get('vcards', $message['data']['record']['vcard']['id'])
+                    );
+                }
+            }
+
+            // Check if the Contacts is accessible
+            if($this->Helper->Core->isInstalled('contacts')){
+                $message['data']['dependencies']['contacts'] = $this->Model->Contacts->fetchAll([
+                    ["key" => "targetTable", "operator" => "=", "value" => $this->basename],
+                    ["key" => "targetId", "operator" => "=", "value" => $message['data']['record']['id']],
+                    ["key" => "isArchived", "operator" => "<>", "value" => 1],
+                ]);
+            }
+
+            // Check if the Events is accessible
+            if($this->Helper->Core->isInstalled('event')){
+                $message['data']['dependencies']['event'] = $this->Model->Event->fetchAll([
+                    ["key" => "targetTable", "operator" => "=", "value" => $this->basename],
+                    ["key" => "targetId", "operator" => "=", "value" => $message['data']['record']['id']],
+                    ["key" => "isArchived", "operator" => "<>", "value" => 1],
+                ]);
+            }
+
+            // Check if the Files is accessible
+            if($this->Helper->Core->isInstalled('files')){
+                $message['data']['dependencies']['files'] = $this->Model->Files->fetchAll([
+                    ["key" => "targetTable", "operator" => "=", "value" => $this->basename],
+                    ["key" => "targetId", "operator" => "=", "value" => $message['data']['record']['id']],
+                    ["key" => "isArchived", "operator" => "<>", "value" => 1],
+                ]);
+            }
+
+            // Check if the Notes is accessible
+            if($this->Helper->Core->isInstalled('notes')){
+                $message['data']['dependencies']['notes'] = $this->Model->Notes->fetchAll([
+                    ["key" => "targetTable", "operator" => "=", "value" => $this->basename],
+                    ["key" => "targetId", "operator" => "=", "value" => $message['data']['record']['id']],
+                    ["key" => "isArchived", "operator" => "<>", "value" => 1],
+                ]);
+            }
+
+            // Check if the Services is accessible
+            if($this->Helper->Core->isInstalled('inventory')){
+                $message['data']['dependencies']['inventory'] = $this->Model->Inventory->fetchAll([
+                    ["key" => "targetTable", "operator" => "=", "value" => $this->basename],
+                    ["key" => "targetId", "operator" => "=", "value" => $message['data']['record']['id']],
+                    ["key" => "isArchived", "operator" => "<>", "value" => 1],
+                ]);
+            }
+        }
 
         // Return the message
         return $message;
     }
 
     /**
-     * Update a User
-     */
-    public function updateAction(): array
-    {
-        // Import Global Variables
-        global $CSRF;
-
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => []];
-
-        // Check the request method
-        if($this->Request->getMethod() == "POST"){
-            $message["data"]["CSRF"] = [
-                "token" => $CSRF->token(),
-                "key" => $CSRF->key()
-            ];
-        }
-
-        // Retrieve the user id
-        $id = intval($this->Request->getParams('REQUEST','id'));
-
-        // Retrieve the user
-        $user = $this->Model->Users->get($id, false);
-
-        // Check if the user exists
-        if(empty($user)){
-            $message = ["status" => 404, "message" => "Not Found", "data" => "Could not find the requested user."];
-        }
-
-        // Check if the user is accessible
-        if($message['status'] == 200){
-
-            // Check the request method
-            if($this->Request->getMethod() == "POST"){
-
-                // Retrieve the parameters
-                $parameters = $this->Request->getParams('REQUEST');
-
-                // Initialize the Events
-                $message['data']['events'] = [];
-
-                // Update the user
-                foreach($parameters as $key => $value){
-                    if(isset($user[$key])){
-                        switch($key){
-                            case 'users':
-                                if(is_array($value)){
-                                    $user[$key] = [];
-                                    foreach($value as $objId){
-                                        $user[$key][] = intval($objId);
-                                    }
-                                    $user[$key] = array_unique($user[$key]);
-                                } else {
-                                    $user[$key] = $value;
-                                }
-                                break;
-                            case 'isDefault':
-                                $user[$key] = intval(filter_var($value, FILTER_VALIDATE_BOOLEAN));
-                                break;
-                            default:
-                                $user[$key] = $value;
-                                break;
-                        }
-                    }
-                }
-
-                // Update the user
-                $affectedRows = $this->Model->Users->update($id, $user);
-
-                // Retrieve the final user
-                $message['data']['record'] = $this->Model->Users->get($id);
-            } else {
-                $message = ["status" => 405, "message" => "Method Not Allowed", "data" => "The method is not allowed for the requested URL."];
-            }
-        }
-
-        return $message;
-    }
-
-    /**
-     * Create a User
+     * Create a record
      */
     public function createAction(): array
     {
         // Import Global Variables
-        global $CSRF, $SMTP, $CONFIG;
+        global $UUID, $SMTP;
 
-        // Set the default message
-        $message = ["status" => 200, "message" => "OK", "data" => []];
+        // Retrieve the username
+        $username = $this->Request->getParams('REQUEST','username');
 
-        // Check the request method
-        if($this->Request->getMethod() == "POST"){
-            $message["data"]["CSRF"] = [
-                "token" => $CSRF->token(),
-                "key" => $CSRF->key()
-            ];
+        // Check for a duplicate username
+        $users = $this->Model->Users->fetchAll([["key" => "username","operator" => "=","value" => $username]]);
+
+        // Check the count of users
+        if(count($users) > 0){
+
+            // Return an error message
+            return ['status' => 400,'message' => 'Bad Request','data' => 'The username is already in use.'];
         }
 
+        // Call the parent constructor
+        $message = parent::createAction();
 
-
-        // Check if the user is accessible
+        // Check if the record is accessible
         if($message['status'] == 200){
 
-            // Check the request method
-            if($this->Request->getMethod() == "POST"){
+            // Retrieve the parameters
+            $parameters = $message['data']['parameters'];
 
-                // Retrieve the parameters
-                $parameters = $this->Request->getParams('REQUEST');
+            // Initialize the fields array
+            $fields = [];
+
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
 
                 // Initialize the Events
-                $message['data']['events'] = [];
+                $message['data']['event'] = [];
 
-                // Add required fields
-                $parameters['owner'] = $this->Auth->user()->username;
-                $parameters['organization'] = $this->Auth->user()->organization()->id;
-                $parameters['password'] = $this->Helper->Users->generate(12);
-                $parameters['isVerified'] = 1;
+                // Setup a new event
+                $event = [
+                    'category' => 'User',
+                    'message' => 'New User Created by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                    'targetTable' => 'users',
+                    'targetId' => $message['data']['record']['id'],
+                ];
 
-                // Required Fields
-                $required = ["name", "email", "owner", "organization", "password", "isVerified"];
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
+            }
 
-                // Check if all required fields are set
-                if(count(array_intersect_key(array_flip($required), $parameters)) == count($required)){
+            // Check if the vCards Plugin is accessible
+            if($this->Helper->Core->isInstalled('vcards')){
+
+                // Initialize the record
+                $record = $parameters;
+
+                // Set the vCard category
+                $record['category'] = 'User';
+                $record['locale'] = $this->Locale->current();
+
+                // Create the vCard
+                $fields['vcard'] = $this->Model->Vcards->create($record);
+
+                // Check if the Event Plugin is accessible
+                if($this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'vCard',
+                        'message' => 'New vCard Created by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if the Backends Plugin is accessible
+            if($this->Helper->Core->isInstalled('backends')){
+
+                // Initialize the record
+                $record = $parameters;
+
+                // Generate a random password
+                $password = $this->Helper->Auth->generate();
+
+                // Set the Backend
+                $record['type'] = 'local';
+                $record['password'] = password_hash($password, PASSWORD_DEFAULT);
+
+                // Create the Backend
+                $fields['backend'] = $this->Model->Backends->create($record);
+
+                // Check if the Event Plugin is accessible
+                if($this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'Backend',
+                        'message' => 'New Backend Created by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if the Tokens Plugin is accessible
+            if($this->Helper->Core->isInstalled('tokens')){
+
+                // Initialize the record
+                $record = $parameters;
+
+                // Generate an UUID
+                $token = $UUID->toString($message['data']['record']['username']);
+
+                // Set the Token
+                $record['hash'] = password_hash($token, PASSWORD_DEFAULT);
+                $record['user'] = $message['data']['record']['id'];
+
+                // Create the Token
+                $fields['token'] = $this->Model->Tokens->create($record);
+
+                // Check if the Event Plugin is accessible
+                if($this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'Token',
+                        'message' => 'New Token Created by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if the Pins Plugin is accessible
+            if($this->Helper->Core->isInstalled('pins')){
+
+                // Initialize the record
+                $record = $parameters;
+
+                // Generate a Pin
+                $pin = $this->Helper->Auth->generate(6, true);
+
+                // Set the Pin
+                $record['hash'] = password_hash($pin, PASSWORD_DEFAULT);
+                $record['user'] = $message['data']['record']['id'];
+
+                // Create the Pin
+                $fields['pin'] = $this->Model->Pins->create($record);
+
+                // Check if the Event Plugin is accessible
+                if($this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'Pin',
+                        'message' => 'New Pin Created by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if tags is set
+            if($this->Helper->Core->isInstalled('tags') && array_key_exists('tags', $parameters) && !empty($parameters['tags'])){
+
+                // Loop through the tags
+                foreach($parameters['tags'] ?? [] as $key => $tag){
+
+                    // Check if the tag is not empty
+                    if(!empty($tag)){
+
+                        // Create the tag
+                        $this->Model->Tags->create(['name' => $tag]);
+                    }
+                }
+            }
+
+            // Check if industries is set
+            if($this->Helper->Core->isInstalled('industries') && array_key_exists('industries', $parameters) && !empty($parameters['industries'])){
+
+                // Loop through the industries
+                foreach($parameters['industries'] ?? [] as $key => $industry){
+
+                    // Check if the industry is not empty
+                    if(!empty($industry)){
+
+                        // Create the industry
+                        $this->Model->Industries->create(['name' => $industry]);
+                    }
+                }
+            }
+
+            // Check if the Organizations Plugin is accessible
+            if($this->Helper->Core->isInstalled('organizations')){
+
+                // Retrieve the organization
+                $organization = $this->Model->Organizations->fetch($this->Auth->user()->organization()->id);
+
+                // Add the user to the organization
+                $organization['users'][] = $message['data']['record']['id'];
+
+                // Filter the users to remove duplicates
+                $organization['users'] = array_unique($organization['users']);
+
+                // Update the organization
+                $affectedRows = $this->Model->Organizations->update($organization['id'], ['users' => $organization['users']]);
+
+                // Check if the Organization was updated
+                if($affectedRows && $this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'User',
+                        'message' => 'User <vcard>'.$message['data']['record']['vcard']['id'].':'.$message['data']['record']['vcard']['name'].'</vcard> added to Organization <vcard>'.$organization['id'].':'.$organization['vcard']['name'].'</vcard> by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/organizations/details?id='.$organization['id'].'&name='.urlencode($organization['vcard']['name']),
+                        'targetTable' => 'organizations',
+                        'targetId' => $organization['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if $fields is empty
+            if(!empty($fields)){
+                $affectedRows = $this->Model->Users->update($message['data']['record']['id'], $fields);
+
+                // Check if we send out the notification
+                if($affectedRows){
+
+                    // Retrieve the updated record
+                    $message['data']['record'] = $this->Model->Users->fetch($message['data']['record']['id']);
 
                     // Connect to the smtp server
                     $SMTP->connect();
@@ -209,65 +375,292 @@ class UsersEndpoint extends Endpoint {
                         // Check if the SMTP Server is authenticated
                         if($SMTP->isAuthenticated()){
 
-                            // Create the User
-                            if($userId = $this->Model->Users->create($parameters)){
+                            // Write the email
+                            $body = '';
+                            $body .= '<p>Welcome to '.$message['data']['record']['vcard']['name'].'!</p>';
+                            $body .= '<p>Your account has been created and is ready to use.</p>';
+                            $body .= '<p>Here is your account password:</p>';
+                            $body .= '<pre style="background-color: #F5F5F5; font-weight: 700; font-size: 28px; text-align: center; letter-spacing: 16px; margin: 20px 20px; padding: 20px 0; font-family: Courier, monospace">'.($password ?? 'ERROR!').'</pre>';
+                            $body .= '<p>Please follow the link below to access %BRAND%.</p>';
+                            $body .= '<p style="text-align:center;margin-top: 40px;margin-bottom:40px;">';
+                            $body .= '<a href="'.$this->Request->getHostAddress().'" target="_blank" style="margin-left: 6px; margin-right: 6px; text-decoration:none; background-color: #528fb3;color: #fff;font-size: 24px;padding: 20px 40px;text-align: center;margin: 20px 20px;border-radius: 8px;">%BRAND%</a>';
+                            $body .= '</p>';
+                            $body .= '<p>Thank you for choosing '.$message['data']['record']['vcard']['name'].'!</p>';
 
-                                // Retrieve the Organization's vCard
-                                $vCard = $this->Model->Vcards->get($this->Auth->user()->organization()->vcard['id']);
+                            // Create a new message
+                            $eml = $SMTP->message()
+                                ->to($message['data']['record']['vcard']['email'])
+                                ->from($message['data']['record']['organization']['vcard']['email'] ?? $this->Config->get('smtp','username'))
+                                ->subject('Welcome to '.$message['data']['record']['organization']['vcard']['name'])
+                                ->body($body)
+                                ->var('logo', 'data:'.mime_content_type($this->Config->root() . '/dist/img/logo.png').';base64,' . base64_encode(file_get_contents($this->Config->root() . '/dist/img/logo.png')))
+                                ->var('brand', $this->Config->get('application','name'))
+                                ->var('greetings', "Sincerely,<br>".$message['data']['record']['organization']['vcard']['name']."'s Team");
 
-                                // Write the email
-                                $body = '';
-                                $body .= '<p>Welcome to '.$vCard['name'].'!</p>';
-                                $body .= '<p>Your account has been created and is ready to use.</p>';
-                                $body .= '<p>Here is your account password:</p>';
-                                $body .= '<pre style="background-color: #F5F5F5; font-weight: 700; font-size: 28px; text-align: center; letter-spacing: 16px; margin: 20px 20px; padding: 20px 0; font-family: Courier, monospace">'.$parameters['password'].'</pre>';
-                                $body .= '<p>Please follow the link below to access %BRAND%.</p>';
-                                $body .= '<p style="text-align:center;margin-top: 40px;margin-bottom:40px;">';
-                                $body .= '<a href="'.$this->Request->getHostAddress().'" target="_blank" style="margin-left: 6px; margin-right: 6px; text-decoration:none; background-color: #528fb3;color: #fff;font-size: 24px;padding: 20px 40px;text-align: center;margin: 20px 20px;border-radius: 8px;">%BRAND%</a>';
-                                $body .= '</p>';
-                                $body .= '<p>Thank you for choosing '.$vCard['name'].'!</p>';
+                            // Send the message
+                            $eml->send();
 
-                                // Create a new message
-                                $eml = $SMTP->message()
-                                    ->to($parameters['email'])
-                                    ->from($vCard['email'] ?? $this->Config->get('smtp','username'))
-                                    ->subject('Welcome to '.$vCard['name'])
-                                    ->body($body)
-                                    ->var('logo', 'data:'.mime_content_type($this->Config->root() . '/dist/img/logo.png').';base64,' . base64_encode(file_get_contents($this->Config->root() . '/dist/img/logo.png')))
-                                    ->var('brand', $CONFIG->get('application','name'))
-                                    ->var('greetings', "Sincerely,<br>".$vCard['name']."'s Team");
+                            // Check if the message was sent
+                            if($eml->status()){
 
-                                // Send the message
-                                $eml->send();
-
-                                // Check if the message was sent
-                                if($eml->status()){
-
-                                    // Save the message
-                                    $eml->save();
-
-                                    // Retrieve the final user
-                                    $message['data']['record'] = $this->Model->Users->get($userId);
-                                } else {
-                                    $message = ["status" => 500, "message" => "Internal Server Error", "data" => "An error occurred while sending the email."];
-                                }
-                            } else {
-                                $message = ["status" => 500, "message" => "Internal Server Error", "data" => "An error occurred while creating the user."];
+                                // Save the message
+                                $eml->save();
                             }
-                        } else {
-                            $message = ["status" => 500, "message" => "Internal Server Error", "data" => "An error occurred while authenticating to the SMTP Server."];
                         }
-                    } else {
-                        $message = ["status" => 500, "message" => "Internal Server Error", "data" => "An error occurred while connecting to the SMTP Server."];
                     }
-                } else {
-                    $message = ["status" => 400, "message" => "Bad Request", "data" => "Some required fields are missing."];
                 }
-            } else {
-                $message = ["status" => 405, "message" => "Method Not Allowed", "data" => "The method is not allowed for the requested URL."];
             }
         }
 
+        // Return the message
+        return $message;
+    }
+
+    /**
+     * Update a record
+     */
+    public function updateAction(): array
+    {
+        // Call the parent constructor
+        $message = parent::updateAction();
+
+        // Check if the record is accessible
+        if($message['status'] == 200){
+
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
+
+                // Initialize the Events
+                $message['data']['event'] = [];
+
+                // Setup a new event
+                $event = [
+                    'category' => 'User',
+                    'message' => 'User Updated for <vcard>'.$message['data']['record']['vcard']['id'].':'.$message['data']['record']['vcard']['name'].'</vcard> by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/users/details?id='.$message['data']['record']['id'].'&name='.urlencode($message['data']['record']['vcard']['name']),
+                    'targetTable' => 'users',
+                    'targetId' => $message['data']['record']['id'],
+                ];
+
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
+            }
+        }
+
+        // Return the message
+        return $message;
+    }
+
+    /**
+     * Delete a record
+     */
+    public function deleteAction(): array
+    {
+        // Call the parent constructor
+        $message = parent::deleteAction();
+
+        // Check if the record is accessible
+        if($message['status'] == 200){
+
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
+
+                // Initialize the Events
+                $message['data']['event'] = [];
+
+                // Setup a new event
+                $event = [
+                    'category' => 'User',
+                    'message' => 'User Deleted for <vcard>'.$message['data']['record']['vcard']['id'].':'.$message['data']['record']['vcard']['name'].'</vcard> by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/users/details?id='.$message['data']['record']['id'].'&name='.urlencode($message['data']['record']['vcard']['name']),
+                    'targetTable' => 'users',
+                    'targetId' => $message['data']['record']['id'],
+                ];
+
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
+            }
+
+            // Check if the vCards Plugin is accessible
+            if($this->Helper->Core->isInstalled('vcards')){
+
+                // Delete the vCard
+                $affectedRows = $this->Model->Vcards->delete($message['data']['record']['vcard']['id']);
+
+                // Check if the Event Plugin is accessible
+                if($affectedRows && $this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'vCard',
+                        'message' => 'vCard Deleted by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if the Backends Plugin is accessible
+            if($this->Helper->Core->isInstalled('backends')){
+
+                // Delete the Backend
+                $affectedRows = $this->Model->Backends->delete($message['data']['record']['backend']['id']);
+
+                // Check if the Event Plugin is accessible
+                if($affectedRows && $this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'Backend',
+                        'message' => 'Backend Deleted by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if the Tokens Plugin is accessible
+            if($this->Helper->Core->isInstalled('tokens')){
+
+                // Delete the Token
+                $affectedRows = $this->Model->Tokens->delete($message['data']['record']['token']['id']);
+
+                // Check if the Event Plugin is accessible
+                if($affectedRows && $this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'Token',
+                        'message' => 'Token Deleted by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+
+            // Check if the Pins Plugin is accessible
+            if($this->Helper->Core->isInstalled('pins')){
+
+                // Delete the Pin
+                $affectedRows = $this->Model->Pins->delete($message['data']['record']['pin']['id']);
+
+                // Check if the Event Plugin is accessible
+                if($affectedRows && $this->Helper->Core->isInstalled('event')){
+
+                    // Setup a new event
+                    $event = [
+                        'category' => 'Pin',
+                        'message' => 'Pin Deleted by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                        'icon' => 'circle',
+                        'color' => 'secondary',
+                        'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                        'targetTable' => 'users',
+                        'targetId' => $message['data']['record']['id'],
+                    ];
+
+                    // Create the event
+                    $message['data']['event'][] = $this->Model->Event->create($event);
+                }
+            }
+        }
+
+        // Return the message
+        return $message;
+    }
+
+    /**
+     * Archive a record
+     */
+    public function archiveAction(): array
+    {
+        // Call the parent constructor
+        $message = parent::archiveAction();
+
+        // Check if the record is accessible
+        if($message['status'] == 200){
+
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
+
+                // Initialize the Events
+                $message['data']['event'] = [];
+
+                // Setup a new event
+                $event = [
+                    'category' => 'User',
+                    'message' => 'User Archived by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                    'targetTable' => 'users',
+                    'targetId' => $message['data']['record']['id'],
+                ];
+
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
+            }
+        }
+
+        // Return the message
+        return $message;
+    }
+
+    /**
+     * Recover a record
+     */
+    public function recoverAction(): array
+    {
+        // Call the parent constructor
+        $message = parent::recoverAction();
+
+        // Check if the record is accessible
+        if($message['status'] == 200){
+
+            // Check if the Event Plugin is accessible
+            if($this->Helper->Core->isInstalled('event')){
+
+                // Initialize the Events
+                $message['data']['event'] = [];
+
+                // Setup a new event
+                $event = [
+                    'category' => 'User',
+                    'message' => 'User Recovered by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                    'icon' => 'circle',
+                    'color' => 'secondary',
+                    'link' => '/plugin/users/details?id='.$message['data']['record']['id'],
+                    'targetTable' => 'users',
+                    'targetId' => $message['data']['record']['id'],
+                ];
+
+                // Create the event
+                $message['data']['event'][] = $this->Model->Event->create($event);
+            }
+        }
+
+        // Return the message
         return $message;
     }
 }
