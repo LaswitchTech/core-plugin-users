@@ -129,74 +129,122 @@
                     },
                     function(tabs,card){
                         card._component.body.removeClass('card-body');
-                        tabs.add(
-                            'notes',
-                            {
-                                icon: "stickies",
-                                label: builder.Locale.get("Notes"),
-                            },
-                            function(tab,nav){
-                                NotesFeed(builder.Storage.get('dependencies:notes') ?? {}, tab, 'users', builder.Storage.get('record:id'));
-                            },
-                        );
-                        tabs.add(
-                            'contacts',
-                            {
-                                icon: "person-vcard",
-                                label: builder.Locale.get("Contacts"),
-                            },
-                            function(tab,nav){
-                                ContactsFeed(builder.Storage.get('dependencies:contacts') ?? {}, tab, {
-                                    "address": builder.Storage.get('record:vcard:address'),
-                                    "city": builder.Storage.get('record:vcard:city'),
-                                    "country": builder.Storage.get('record:vcard:country:name'),
-                                    "state": builder.Storage.get('record:vcard:state:name'),
-                                    "zipcode": builder.Storage.get('record:vcard:zipcode'),
-                                    "locale": builder.Storage.get('record:vcard:locale'),
-                                    "phone": builder.Storage.get('record:vcard:phone'),
-                                    "targetTable": "users",
-                                    "targetId": builder.Storage.get('record:id'),
-                                });
-                            },
-                        );
-                        tabs.add(
-                            'files',
-                            {
-                                icon: "file-earmark",
-                                label: builder.Locale.get("Files"),
-                            },
-                            function(tab,nav){
-                                FilesFeed(builder.Storage.get('dependencies:files') ?? {}, tab, {
-                                    targetTable: "users",
-                                    targetId: builder.Storage.get('record:id'),
-                                    isPublic: 1,
-                                });
-                            },
-                        );
-                        tabs.add(
-                            'activities',
-                            {
-                                icon: "activity",
-                                label: builder.Locale.get("Activity"),
-                            },
-                            function(tab,nav){
-                                tab.addClass('px-4 py-3');
-                                EventFeed(builder.Storage.get('dependencies:event') ?? {}, tab);
-                            },
-                        );
-                        tabs.add(
-                            'related',
-                            {
-                                icon: "diagram-2",
-                                label: builder.Locale.get("Related"),
-                            },
-                            function(tab,nav){
-                                tab.addClass('px-4 py-3');
-                                RelationshipFeed(builder.Storage.getKey(), tab, function(feed){
-                                    // card.related.feed = feed;
-                                });
-                            },
-                        );
+                        <?php if($this->Helper->Core->isInstalled('notes')): ?>
+                            tabs.add(
+                                'notes',
+                                {
+                                    icon: "stickies",
+                                    label: builder.Locale.get("Notes"),
+                                },
+                                function(tab,nav){
+                                    NotesFeed(builder.Storage.get('dependencies:notes') ?? {}, tab, 'users', builder.Storage.get('record:id'));
+                                },
+                            );
+                        <?php endif; ?>
+                        <?php if($this->Helper->Core->isInstalled('contacts')): ?>
+                            tabs.add(
+                                'contacts',
+                                {
+                                    icon: "person-vcard",
+                                    label: builder.Locale.get("Contacts"),
+                                },
+                                function(tab,nav){
+                                    ContactsFeed(builder.Storage.get('dependencies:contacts') ?? {}, tab, {
+                                        "address": builder.Storage.get('record:vcard:address'),
+                                        "city": builder.Storage.get('record:vcard:city'),
+                                        "country": builder.Storage.get('record:vcard:country:name'),
+                                        "state": builder.Storage.get('record:vcard:state:name'),
+                                        "zipcode": builder.Storage.get('record:vcard:zipcode'),
+                                        "locale": builder.Storage.get('record:vcard:locale'),
+                                        "phone": builder.Storage.get('record:vcard:phone'),
+                                        "targetTable": "users",
+                                        "targetId": builder.Storage.get('record:id'),
+                                    });
+                                },
+                            );
+                        <?php endif; ?>
+                        <?php if($this->Helper->Core->isInstalled('files')): ?>
+                            tabs.add(
+                                'files',
+                                {
+                                    icon: "file-earmark",
+                                    label: builder.Locale.get("Files"),
+                                },
+                                function(tab,nav){
+                                    FilesFeed(builder.Storage.get('dependencies:files') ?? {}, tab, {
+                                        targetTable: "users",
+                                        targetId: builder.Storage.get('record:id'),
+                                        isPublic: 1,
+                                    });
+                                },
+                            );
+                        <?php endif; ?>
+                        <?php if($this->Helper->Core->isInstalled('documents')): ?>
+                            tabs.add(
+                                'documents',
+                                {
+                                    icon: "file-earmark-richtext",
+                                    label: builder.Locale.get("Documents"),
+                                },
+                                function(tab,nav){
+                                    card.files = tab;
+                                    docvals = {
+                                        "locale": builder.Storage.get('record:vcard:locale'),
+                                        "name": builder.Storage.get('record:vcard:name'),
+                                        "title": builder.Storage.get('record:vcard:title'),
+                                        "role": builder.Storage.get('record:vcard:role'),
+                                        "address": builder.Storage.get('record:vcard:address'),
+                                        "city": builder.Storage.get('record:vcard:city'),
+                                        "state": builder.Storage.get('record:vcard:state:name'),
+                                        "zipcode": builder.Storage.get('record:vcard:zipcode'),
+                                        "country": builder.Storage.get('record:vcard:country:name'),
+                                        "phone": builder.Storage.get('record:vcard:phone'),
+                                        "mobile": builder.Storage.get('record:vcard:mobile'),
+                                        "tollfree": builder.Storage.get('record:vcard:tollfree'),
+                                        "fax": builder.Storage.get('record:vcard:fax'),
+                                        "website": builder.Storage.get('record:vcard:website'),
+                                    };
+                                    builder.Helper.urlToBase64("/profile/avatar?username="+builder.Storage.get('record:username')).then(dataURI => {
+                                        docvals.avatar = dataURI;
+                                        DocumentsFeed(builder.Storage.get('dependencies:documents') ?? [], tab, {
+                                            targetTable: "users",
+                                            targetId: builder.Storage.get('record:id'),
+                                            isPublic: 1,
+                                            locale: builder.Storage.get('record:vcard:locale'),
+                                            docvals: docvals,
+                                        }, builder.Storage.get('record:vcard:locale'));
+                                    });
+                                },
+                            );
+                        <?php endif; ?>
+                        <?php if($this->Helper->Core->isInstalled('event')): ?>
+                            tabs.add(
+                                'activities',
+                                {
+                                    icon: "activity",
+                                    label: builder.Locale.get("Activity"),
+                                },
+                                function(tab,nav){
+                                    tab.addClass('px-4 py-3');
+                                    EventFeed(builder.Storage.get('dependencies:event') ?? {}, tab);
+                                },
+                            );
+                        <?php endif; ?>
+                        <?php if($this->Helper->Core->isInstalled('relationship')): ?>
+                            tabs.add(
+                                'related',
+                                {
+                                    icon: "diagram-2",
+                                    label: builder.Locale.get("Related"),
+                                },
+                                function(tab,nav){
+                                    tab.addClass('px-4 py-3');
+                                    RelationshipFeed(builder.Storage.getKey(), tab, function(feed){
+                                        // card.related.feed = feed;
+                                    });
+                                },
+                            );
+                        <?php endif; ?>
                     },
                 );
             },

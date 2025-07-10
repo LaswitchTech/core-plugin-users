@@ -75,6 +75,15 @@ class UsersEndpoint extends BaseEndpoint {
                 ]);
             }
 
+            // Check if the Documents is accessible
+            if($this->Helper->Core->isInstalled('documents')){
+                $message['data']['dependencies']['documents'] = $this->Model->Documents->fetchAll([
+                    ["key" => "targetTable", "operator" => "=", "value" => $this->basename],
+                    ["key" => "targetId", "operator" => "=", "value" => $message['data']['record']['id']],
+                    ["key" => "isArchived", "operator" => "<>", "value" => 1],
+                ]);
+            }
+
             // Check if the Notes is accessible
             if($this->Helper->Core->isInstalled('notes')){
                 $message['data']['dependencies']['notes'] = $this->Model->Notes->fetchAll([
@@ -84,7 +93,7 @@ class UsersEndpoint extends BaseEndpoint {
                 ]);
             }
 
-            // Check if the Services is accessible
+            // Check if the Inventory is accessible
             if($this->Helper->Core->isInstalled('inventory')){
                 $message['data']['dependencies']['inventory'] = $this->Model->Inventory->fetchAll([
                     ["key" => "targetTable", "operator" => "=", "value" => $this->basename],

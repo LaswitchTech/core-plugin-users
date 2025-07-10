@@ -89,6 +89,7 @@
                                             callback:{
                                                 val: function(values){
                                                     values.username = values.email;
+                                                    values.isVerified = 1;
                                                     return values;
                                                 },
                                                 submit: function(form){
