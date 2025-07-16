@@ -1,0 +1,24 @@
+[
+    {
+        "id": 9999,
+        "created": "2025-04-07 15:10:38",
+        "modified": "2025-04-07 15:10:38",
+        "owner": "demo",
+        "uuid": null,
+        "username": null,
+        "backend": null,
+        "session": null,
+        "vcard": null,
+        "organization": null,
+        "pin": null,
+        "token": null,
+        "attempts": 0,
+        "lastAttempt": null,
+        "lastLogin": null,
+        "isVerified": 0,
+        "isBanned": 0,
+        "isInactive": 0,
+        "isDeleted": 0,
+        "isArchived": 0
+    }
+]

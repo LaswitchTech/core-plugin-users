@@ -1,0 +1,165 @@
+{
+    "0": {
+        "Field": "id",
+        "Type": "bigint(20) unsigned",
+        "Null": "NO",
+        "Key": "PRI",
+        "Default": null,
+        "Extra": "auto_increment"
+    },
+    "1": {
+        "Field": "created",
+        "Type": "datetime",
+        "Null": "NO",
+        "Key": "",
+        "Default": "CURRENT_TIMESTAMP",
+        "Extra": ""
+    },
+    "2": {
+        "Field": "modified",
+        "Type": "datetime",
+        "Null": "NO",
+        "Key": "",
+        "Default": "CURRENT_TIMESTAMP",
+        "Extra": "on update CURRENT_TIMESTAMP"
+    },
+    "3": {
+        "Field": "owner",
+        "Type": "varchar(255)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "4": {
+        "Field": "uuid",
+        "Type": "varchar(255)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "5": {
+        "Field": "username",
+        "Type": "varchar(60)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "6": {
+        "Field": "backend",
+        "Type": "bigint(20)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "7": {
+        "Field": "session",
+        "Type": "bigint(20)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "8": {
+        "Field": "vcard",
+        "Type": "bigint(20)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "9": {
+        "Field": "organization",
+        "Type": "bigint(20)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "10": {
+        "Field": "pin",
+        "Type": "bigint(20)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "11": {
+        "Field": "token",
+        "Type": "bigint(20)",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "12": {
+        "Field": "attempts",
+        "Type": "int(1)",
+        "Null": "NO",
+        "Key": "",
+        "Default": "0",
+        "Extra": ""
+    },
+    "13": {
+        "Field": "lastAttempt",
+        "Type": "timestamp",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "14": {
+        "Field": "lastLogin",
+        "Type": "datetime",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "15": {
+        "Field": "isVerified",
+        "Type": "int(1)",
+        "Null": "NO",
+        "Key": "",
+        "Default": "0",
+        "Extra": ""
+    },
+    "16": {
+        "Field": "isBanned",
+        "Type": "int(1)",
+        "Null": "NO",
+        "Key": "",
+        "Default": "0",
+        "Extra": ""
+    },
+    "17": {
+        "Field": "isInactive",
+        "Type": "int(1)",
+        "Null": "NO",
+        "Key": "",
+        "Default": "0",
+        "Extra": ""
+    },
+    "18": {
+        "Field": "isDeleted",
+        "Type": "int(1)",
+        "Null": "NO",
+        "Key": "",
+        "Default": "0",
+        "Extra": ""
+    },
+    "19": {
+        "Field": "isArchived",
+        "Type": "int(11)",
+        "Null": "NO",
+        "Key": "",
+        "Default": "0",
+        "Extra": ""
+    },
+    "engine": "InnoDB",
+    "charset": "utf8mb4",
+    "collation": "general_ci"
+}
