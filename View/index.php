@@ -71,7 +71,7 @@
                                         const componentModal = component;
 
                                         // Set colors to the modal's header
-                                        component.header.addClass('text-bg-success');
+                                        component.addClass('modal-success');
 
                                         // Change the label of the submit button
                                         component.footer.submit.text('Create').addClass('btn-success').removeClass('btn-link');
