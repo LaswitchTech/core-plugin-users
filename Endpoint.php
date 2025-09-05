@@ -113,7 +113,7 @@ class UsersEndpoint extends BaseEndpoint {
     public function createAction(): array
     {
         // Import Global Variables
-        global $UUID, $SMTP;
+        global $UUID, $SMTP, $BUILDER;
 
         // Retrieve the username
         $username = $this->Request->getParams('REQUEST','username');
@@ -298,36 +298,6 @@ class UsersEndpoint extends BaseEndpoint {
                 }
             }
 
-            // Check if tags is set
-            if($this->Helper->Core->isInstalled('tags') && array_key_exists('tags', $parameters) && !empty($parameters['tags'])){
-
-                // Loop through the tags
-                foreach($parameters['tags'] ?? [] as $key => $tag){
-
-                    // Check if the tag is not empty
-                    if(!empty($tag)){
-
-                        // Create the tag
-                        $this->Model->Tags->create(['name' => $tag]);
-                    }
-                }
-            }
-
-            // Check if industries is set
-            if($this->Helper->Core->isInstalled('industries') && array_key_exists('industries', $parameters) && !empty($parameters['industries'])){
-
-                // Loop through the industries
-                foreach($parameters['industries'] ?? [] as $key => $industry){
-
-                    // Check if the industry is not empty
-                    if(!empty($industry)){
-
-                        // Create the industry
-                        $this->Model->Industries->create(['name' => $industry]);
-                    }
-                }
-            }
-
             // Check if the Organizations Plugin is accessible
             if($this->Helper->Core->isInstalled('organizations')){
 
@@ -386,7 +356,7 @@ class UsersEndpoint extends BaseEndpoint {
 
                             // Write the email
                             $body = '';
-                            $body .= '<p>Welcome to '.$message['data']['record']['vcard']['name'].'!</p>';
+                            $body .= '<p>Welcome to '.$message['data']['record']['organization']['vcard']['name'].'!</p>';
                             $body .= '<p>Your account has been created and is ready to use.</p>';
                             $body .= '<p>Here is your account password:</p>';
                             $body .= '<pre style="background-color: #F5F5F5; font-weight: 700; font-size: 28px; text-align: center; letter-spacing: 16px; margin: 20px 20px; padding: 20px 0; font-family: Courier, monospace">'.($password ?? 'ERROR!').'</pre>';
@@ -394,7 +364,7 @@ class UsersEndpoint extends BaseEndpoint {
                             $body .= '<p style="text-align:center;margin-top: 40px;margin-bottom:40px;">';
                             $body .= '<a href="'.$this->Request->getHostAddress().'" target="_blank" style="margin-left: 6px; margin-right: 6px; text-decoration:none; background-color: #528fb3;color: #fff;font-size: 24px;padding: 20px 40px;text-align: center;margin: 20px 20px;border-radius: 8px;">%BRAND%</a>';
                             $body .= '</p>';
-                            $body .= '<p>Thank you for choosing '.$message['data']['record']['vcard']['name'].'!</p>';
+                            $body .= '<p>Thank you for choosing '.$message['data']['record']['organization']['vcard']['name'].'!</p>';
 
                             // Create a new message
                             $eml = $SMTP->message()
@@ -402,7 +372,7 @@ class UsersEndpoint extends BaseEndpoint {
                                 ->from($message['data']['record']['organization']['vcard']['email'] ?? $this->Config->get('smtp','username'))
                                 ->subject('Welcome to '.$message['data']['record']['organization']['vcard']['name'])
                                 ->body($body)
-                                ->var('logo', 'data:'.mime_content_type($this->Config->root() . '/dist/img/logo.png').';base64,' . base64_encode(file_get_contents($this->Config->root() . '/dist/img/logo.png')))
+                                ->var('logo', 'data:'.mime_content_type($this->Config->root() . '/webroot' . $BUILDER->logo()).';base64,' . base64_encode(file_get_contents($this->Config->root() . '/webroot' . $BUILDER->logo())))
                                 ->var('brand', $this->Config->get('application','name'))
                                 ->var('greetings', "Sincerely,<br>".$message['data']['record']['organization']['vcard']['name']."'s Team");
 
