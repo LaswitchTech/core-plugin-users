@@ -64,6 +64,15 @@ class UsersEndpoint extends BaseEndpoint {
                     ["key" => "targetId", "operator" => "=", "value" => $message['data']['record']['id']],
                     ["key" => "isArchived", "operator" => "<>", "value" => 1],
                 ]);
+                // $message['data']['dependencies']['event'] = array_merge(
+                //     $message['data']['dependencies']['event'],
+                //     $this->Model->Event->fetchAll([
+                //         ["key" => "owner", "operator" => "=", "value" => $message['data']['record']['username']],
+                //     ])
+                // );
+                // usort($message['data']['dependencies']['event'], function($a, $b) {
+                //     return strtotime($b['created']) - strtotime($a['created']);
+                // });
             }
 
             // Check if the Files is accessible
