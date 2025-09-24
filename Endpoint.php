@@ -178,7 +178,7 @@ class UsersEndpoint extends BaseEndpoint {
 
                 // Set the vCard category
                 $record['category'] = 'User';
-                $record['locale'] = $this->Locale->current();
+                $record['locale'] = isset($record['locale']) ? $record['locale'] : $this->Locale->current();
 
                 // Create the vCard
                 $fields['vcard'] = $this->Model->Vcards->create($record);
