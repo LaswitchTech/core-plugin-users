@@ -19,6 +19,22 @@
                             window.location.href = "/plugin/users/details?id=" + data.id + "&name=" + data.username;
                         }
                     },
+                    reset:{
+                        label:'Reset Password',
+                        icon:'person-lock',
+                        action:function(event, table, dt, node, row, data){
+                            builder.Widget('users', {id: data.username}).reset(function(response){
+
+                                // Show a toast message
+                                builder.Toast.add({
+                                    color: 'success',
+                                    icon: 'check-circle',
+                                    title: builder.Locale.get('Success'),
+                                    body: builder.Locale.get('The password has been reset and an email has been sent to the user.'),
+                                });
+                            });
+                        }
+                    },
                 },
                 buttons: [
                     {
