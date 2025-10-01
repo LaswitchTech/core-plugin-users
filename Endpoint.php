@@ -689,6 +689,47 @@ class UsersEndpoint extends BaseEndpoint {
                 // Update the Backend password
                 if($this->Helper->Core->isInstalled('auth')){
 
+                    // Check if the user has a backend
+                    if(is_null($user['backend'])){
+
+                        // Initialize the backend
+                        $backend = [];
+
+                        // Set the Backend
+                        $backend['type'] = 'local';
+                        $backend['password'] = password_hash($password, PASSWORD_DEFAULT);
+
+                        // Create the Backend
+                        $user['backend'] = $this->Model->Backends->create($backend);
+
+                        // Check if the backend was created
+                        if($user['backend']){
+
+                            // Update the user with the new backend
+                            $this->Model->Users->update($user['id'], ['backend' => $user['backend']]);
+
+                            // Check if the Event Plugin is accessible
+                            if($this->Helper->Core->isInstalled('event')){
+
+                                // Setup a new event
+                                $event = [
+                                    'category' => 'Backend',
+                                    'message' => 'New Backend Created by <vcard>'.$this->Auth->user()->vcard['id'].':'.$this->Auth->user()->username.'</vcard>',
+                                    'icon' => 'circle',
+                                    'color' => 'secondary',
+                                    'link' => '/plugin/users/details?id='.$user['id'],
+                                    'targetTable' => 'users',
+                                    'targetId' => $user['id'],
+                                ];
+
+                                // Create the event
+                                $message['data']['event'][] = $this->Model->Event->create($event);
+                            }
+                        } else {
+                            return ['status' => 500,'message' => 'Internal Server Error','data' => 'The user backend could not be created.'];
+                        }
+                    }
+
                     // Retrieve the backend
                     $backend = $this->Model->Backends->fetch($user['backend']);
 
@@ -738,7 +779,7 @@ class UsersEndpoint extends BaseEndpoint {
                                     $eml->save();
 
                                     // Set the success message
-                                    $message['data'] = 'The password reset email has been sent.';
+                                    $message['data']['message'] = 'The password reset email has been sent.';
                                 } else {
                                     $message = ['status' => 500,'message' => 'Internal Server Error','data' => 'The password reset email could not be sent.'];
                                 }

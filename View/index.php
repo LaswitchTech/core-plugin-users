@@ -131,7 +131,6 @@
 
                             // Setup tooltip and timeago
                             setInterval(function(){
-                                console.log($('[data-type="lastLogin"]:not(.rendered)').length)
                                 $('[data-type="lastLogin"]:not(.rendered)').each(function(){
                                     const tooltip = new Date($(this).find('time').attr('datetime') ?? new Date().toISOString());
                                     $(this).attr({
