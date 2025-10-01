@@ -202,8 +202,8 @@ class UsersEndpoint extends BaseEndpoint {
                 }
             }
 
-            // Check if the Backends Plugin is accessible
-            if($this->Helper->Core->isInstalled('backends')){
+            // Check if the Auth Plugin is accessible
+            if($this->Helper->Core->isInstalled('auth')){
 
                 // Initialize the record
                 $record = $parameters;
