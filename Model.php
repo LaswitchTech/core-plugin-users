@@ -32,6 +32,7 @@ class UsersModel extends BaseModel {
             ->join('owner', 'users', 'username')
             ->join('vcard', 'vcards', 'id')
             ->join('organization', 'organizations', 'id')
+            ->join('organization.vcard', 'vcards', 'id')
             ->index($this->primary)
             ->filter()
             ->where('id', 9999, '<>')

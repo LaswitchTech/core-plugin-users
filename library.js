@@ -255,6 +255,7 @@ builder.add('widgets','users', class extends builder.ComponentClass {
             },
             default: {},
             table: 'users',
+            id: null,
             callback: {},
         };
     }
@@ -580,6 +581,49 @@ builder.add('widgets','users', class extends builder.ComponentClass {
                                     reject(error);
                                 });
                             } catch(e) { reject(e); }
+                        });
+                    },
+                },
+            },
+            function(modal,component){
+
+                // Show the modal
+                modal.show();
+            },
+        );
+    }
+
+    reset(callback = null){
+
+        // Set Self
+        const self = this;
+
+        // Create the Modal
+        this._builder.Component(
+            "modal",
+            {
+                icon: "person-lock",
+                title: this._builder.Locale.get("Are you sure?"),
+                body: this._builder.Locale.get("You are about to reset the user's password. Are you sure you want to continue?"),
+                color: 'warning',
+                callback: {
+                    submit: function(element,modal){
+
+                        // Show the modal spinner
+                        modal.spinner(true);
+
+                        // AJAX Request
+                        API.endpoint('/users/reset?username='+encodeURIComponent(self._properties.id)).execute(function(response){
+
+                            // Check if a callback is provided
+                            if (typeof callback === 'function') {
+                                callback(response);
+                            }
+
+                            // Close the modal
+                            modal.hide();
+                        },function(xhr, status, error){
+                            modal.hide();
                         });
                     },
                 },

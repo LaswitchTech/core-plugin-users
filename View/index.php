@@ -19,6 +19,22 @@
                             window.location.href = "/plugin/users/details?id=" + data.id + "&name=" + data.username;
                         }
                     },
+                    reset:{
+                        label:'Reset Password',
+                        icon:'person-lock',
+                        action:function(event, table, dt, node, row, data){
+                            builder.Widget('users', {id: data.username}).reset(function(response){
+
+                                // Show a toast message
+                                builder.Toast.add({
+                                    color: 'success',
+                                    icon: 'check-circle',
+                                    title: builder.Locale.get('Success'),
+                                    body: builder.Locale.get('The password has been reset and an email has been sent to the user.'),
+                                });
+                            });
+                        }
+                    },
                 },
                 buttons: [
                     {
@@ -101,6 +117,35 @@
                         name: 'lastLogin',
                         data: 'lastLogin',
                         defaultContent: '',
+                        render: function(value, data, type){
+
+                            // Handle sorting
+                            if (type === 'sort') {
+                                return value ? Date.parse(value) : Number.MAX_SAFE_INTEGER;
+                            }
+
+                            // Check if the value is empty or null
+                            if(value === null || value === ''){
+                                return '';
+                            }
+
+                            // Setup tooltip and timeago
+                            setInterval(function(){
+                                console.log($('[data-type="lastLogin"]:not(.rendered)').length)
+                                $('[data-type="lastLogin"]:not(.rendered)').each(function(){
+                                    const tooltip = new Date($(this).find('time').attr('datetime') ?? new Date().toISOString());
+                                    $(this).attr({
+                                        'data-bs-toggle': 'tooltip',
+                                        'data-bs-title': tooltip.toLocaleString(),
+                                    }).addClass('rendered');
+                                    new bootstrap.Tooltip($(this));
+                                    $(this).find('time').timeago();
+                                });
+                            },100);
+
+                            // Return the formatted date
+                            return '<div data-type="lastLogin"><i class="bi bi-clock me-1"></i><time datetime="'+value+'"></time></div>';
+                        },
                     },
                 ],
             });
