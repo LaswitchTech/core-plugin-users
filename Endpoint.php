@@ -651,4 +651,115 @@ class UsersEndpoint extends BaseEndpoint {
         // Return the message
         return $message;
     }
+
+    /**
+     * Reset a record password
+     */
+    public function resetAction(): array
+    {
+        // Import Global Variables
+        global $SMTP, $BUILDER;
+
+        // Set the default message
+        $message = ["status" => 200, "message" => "OK", "data" => []];
+
+        // Retrieve the username
+        $username = $this->Request->getParams('REQUEST','username');
+
+        // Check if the username is provided
+        if(empty($username) || is_null($username)){
+            $message = ['status' => 400,'message' => 'Bad Request','data' => 'The username is required.'];
+        }
+
+        // Check if the record is accessible
+        if($message['status'] == 200){
+
+            // Check for a duplicate username
+            $users = $this->Model->Users->fetchAll([["key" => "username","operator" => "=","value" => $username]]);
+
+            // Check the count of users
+            if(count($users) > 0){
+
+                // Select the user
+                $user = $users[array_key_first($users)];
+
+                // Generate a random password
+                $password = $this->Helper->Auth->generate();
+
+                // Update the Backend password
+                if($this->Helper->Core->isInstalled('auth')){
+
+                    // Retrieve the backend
+                    $backend = $this->Model->Backends->fetch($user['backend']);
+
+                    // Update the password
+                    if($this->Model->Backends->update($backend['id'], ['password' => password_hash($password, PASSWORD_DEFAULT)])){
+
+                        // Connect to the smtp server
+                        $SMTP->connect();
+
+                        // Check if the smtp server is connected
+                        if($SMTP->isConnected()){
+
+                            // Authenticate to the SMTP Server
+                            $SMTP->authenticate();
+
+                            // Check if the SMTP Server is authenticated
+                            if($SMTP->isAuthenticated()){
+
+                                // Write the email
+                                $body = '';
+                                $body .= '<p>Your account password has been reset.</p>';
+                                $body .= '<p>Here is your new account password:</p>';
+                                $body .= '<pre style="background-color: #F5F5F5; font-weight: 700; font-size: 28px; text-align: center; letter-spacing: 16px; margin: 20px 20px; padding: 20px 0; font-family: Courier, monospace">'.($password ?? 'ERROR!').'</pre>';
+                                $body .= '<p>Please follow the link below to access %BRAND%.</p>';
+                                $body .= '<p style="text-align:center;margin-top: 40px;margin-bottom:40px;">';
+                                $body .= '<a href="'.$this->Request->getHostAddress().'" target="_blank" style="margin-left: 6px; margin-right: 6px; text-decoration:none; background-color: #528fb3;color: #fff;font-size: 24px;padding: 20px 40px;text-align: center;margin: 20px 20px;border-radius: 8px;">%BRAND%</a>';
+                                $body .= '</p>';
+                                $body .= '<p>If you did not request this change, please contact your system administrator immediately.</p>';
+
+                                // Create a new message
+                                $eml = $SMTP->message()
+                                    ->to($user['username'])
+                                    ->from($user['organization']['vcard']['email'] ?? $this->Config->get('smtp','username'))
+                                    ->subject('Your account password has been reset')
+                                    ->body($body)
+                                    ->var('logo', 'data:'.mime_content_type($this->Config->root() . '/webroot' . $BUILDER->logo()).';base64,' . base64_encode(file_get_contents($this->Config->root() . '/webroot' . $BUILDER->logo())))
+                                    ->var('brand', $this->Config->get('application','name'))
+                                    ->var('greetings', "Sincerely,<br>".$user['organization']['vcard']['name']."'s Team");
+
+                                // Send the message
+                                $eml->send();
+
+                                // Check if the message was sent
+                                if($eml->status()){
+
+                                    // Save the message
+                                    $eml->save();
+
+                                    // Set the success message
+                                    $message['data'] = 'The password reset email has been sent.';
+                                } else {
+                                    $message = ['status' => 500,'message' => 'Internal Server Error','data' => 'The password reset email could not be sent.'];
+                                }
+                            } else {
+                                $message = ['status' => 500,'message' => 'Internal Server Error','data' => 'Could not authenticate to the SMTP server.'];
+                            }
+                        } else {
+                            $message = ['status' => 500,'message' => 'Internal Server Error','data' => 'Could not connect to the SMTP server.'];
+                        }
+                    } else {
+                        $message = ['status' => 500,'message' => 'Internal Server Error','data' => 'The user password could not be updated.'];
+                    }
+                } else {
+                    $message = ['status' => 500,'message' => 'Internal Server Error','data' => 'The Backends Plugin is not installed.'];
+                }
+            } else {
+                $message = ['status' => 404,'message' => 'Not Found','data' => 'The username does not exist.'];
+            }
+        }
+
+        // Return the message
+        return $message;
+    }
 }
