@@ -9,14 +9,14 @@
                     {key: 'isArchived', operator: '<>', value: 1},
                 ],
                 dblclick: function(event, table, dt, node, data){
-                    window.location.href = "/plugin/users/details?id=" + data.id + "&name=" + data.username;
+                    window.location.href = "/security/users/details?id=" + data.id + "&name=" + data.username;
                 },
                 actions: {
                     details:{
                         label:'Details',
                         icon:'eye',
                         action:function(event, table, dt, node, row, data){
-                            window.location.href = "/plugin/users/details?id=" + data.id + "&name=" + data.username;
+                            window.location.href = "/security/users/details?id=" + data.id + "&name=" + data.username;
                         }
                     },
                     reset:{
