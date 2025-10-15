@@ -120,6 +120,14 @@
         "Extra": ""
     },
     "15": {
+        "Field": "settings",
+        "Type": "json",
+        "Null": "YES",
+        "Key": "",
+        "Default": null,
+        "Extra": ""
+    },
+    "16": {
         "Field": "isVerified",
         "Type": "int(1)",
         "Null": "NO",
@@ -127,7 +135,7 @@
         "Default": "0",
         "Extra": ""
     },
-    "16": {
+    "17": {
         "Field": "isBanned",
         "Type": "int(1)",
         "Null": "NO",
@@ -135,7 +143,7 @@
         "Default": "0",
         "Extra": ""
     },
-    "17": {
+    "18": {
         "Field": "isInactive",
         "Type": "int(1)",
         "Null": "NO",
@@ -143,7 +151,7 @@
         "Default": "0",
         "Extra": ""
     },
-    "18": {
+    "19": {
         "Field": "isDeleted",
         "Type": "int(1)",
         "Null": "NO",
@@ -151,7 +159,7 @@
         "Default": "0",
         "Extra": ""
     },
-    "19": {
+    "20": {
         "Field": "isArchived",
         "Type": "int(11)",
         "Null": "NO",

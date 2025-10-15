@@ -15,6 +15,7 @@
         "attempts": 0,
         "lastAttempt": null,
         "lastLogin": null,
+        "settings": null,
         "isVerified": 0,
         "isBanned": 0,
         "isInactive": 0,
